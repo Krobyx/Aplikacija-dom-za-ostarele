@@ -64,7 +64,7 @@ public class Stanovalci {
         columnModel.getColumn(1).setPreferredWidth(200);
         columnModel.getColumn(2).setPreferredWidth(200);
         columnModel.getColumn(3).setPreferredWidth(200);
-        columnModel.getColumn(4).setPreferredWidth(100);
+        columnModel.getColumn(4).setPreferredWidth(200);
         columnModel.getColumn(5).setPreferredWidth(200);
         columnModel.getColumn(6).setPreferredWidth(300);
         columnModel.getColumn(7).setPreferredWidth(200);
@@ -77,7 +77,7 @@ public class Stanovalci {
 
         // Ustvarjanje panela z gumbi
         JPanel buttonsPanel = new JPanel();
-        JButton addButton = new JButton("Dodaj nov stanovalca");
+        JButton addButton = new JButton("Dodaj novega stanovalca");
         JButton editButton = new JButton("Uredi stanovalca");
         JButton deleteButton = new JButton("Izbriši stanovalca");
         buttonsPanel.add(addButton);
