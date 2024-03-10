@@ -5,7 +5,7 @@ public class Launcher {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                Registracija test = new Registracija();
+                Prijava test = new Prijava();
                 test.show();
             }
         });
