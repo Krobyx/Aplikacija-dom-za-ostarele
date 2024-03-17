@@ -1,5 +1,10 @@
 import javax.swing.*;
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class Registracija {
 
@@ -15,8 +20,17 @@ public class Registracija {
     private JButton registerButton;
     private JButton loginButton;
     private JLabel errorLabel;
+    private PostgreSQL db;
+
 
     public Registracija() {
+        try {
+            db = new PostgreSQL();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
+        }
+
         window = new JFrame("Registracija");
         window.setPreferredSize(new Dimension(1024, 768));
         window.setBounds(10, 10, 1024, 768);
@@ -60,6 +74,11 @@ public class Registracija {
 
         registerButton = new JButton("Registriraj se"); // Ustvarimo nov gumb
         registerButton.setBounds(10, 420, 1004, 40); // Nastavimo pozicijo in velikost
+        registerButton.addActionListener( new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                registerButtonActionPerformed(evt);
+            }
+        }); // Dodamo listener na gumb
         container.add(registerButton); // Dodamo gumb v panel
 
         loginButton = new JButton("Pojdi na prijavo"); // Ustvarimo nov gumb
@@ -70,6 +89,61 @@ public class Registracija {
             }
         }); // Dodamo listener na gumb
         container.add(loginButton); // Dodamo gumb v panel
+    }
+
+    private void registerButtonActionPerformed(java.awt.event.ActionEvent evt) {
+        // Tukaj bi izvedli dejansko registracijo uporabnika
+        String email = emailField.getText();
+        String password = new String(passwordField.getPassword());
+        String confirmPassword = new String(passwordConfirmField.getPassword());
+
+        // Preverimo, ali so vsa polja izpolnjena
+        if (email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+            JOptionPane.showMessageDialog(window, "Prosimo, izpolnite vsa polja.", "Nepopolni podatki", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Preverimo, ali se gesli ujemata
+        if (!password.equals(confirmPassword)) {
+            JOptionPane.showMessageDialog(window, "Gesli se ne ujemata.", "Neveljavna gesla", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Registriramo uporabnika
+        try {
+            // Preverimo, ali je e-poštni naslov že v uporabi
+            if (checkIfEmailExists(email)) {
+                JOptionPane.showMessageDialog(window, "Ta e-poštni naslov je že v uporabi.", "Napaka", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Dodamo uporabnika v bazo podatkov
+            registerUser(email, password);
+
+            // Po uspešni registraciji lahko naredimo kaj takega, kot je prijava uporabnika ali prikaz drugega okna
+            JOptionPane.showMessageDialog(window, "Uspešno ste se registrirali.", "Registracija uspešna", JOptionPane.INFORMATION_MESSAGE);
+            Prijava prijava = new Prijava(); // Ustvarimo novo okno
+            prijava.show(); // Pokažemo novo okno
+            window.dispose(); // Zapremo trenutno okno
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(window, "Napaka pri registraciji uporabnika.", "Napaka", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private boolean checkIfEmailExists(String email) throws SQLException {
+        // Preverimo, ali e-poštni naslov že obstaja v bazi
+        String query = "SELECT COUNT(*) AS count FROM uporabniki WHERE el_naslov = '" + email + "'";
+        ResultSet resultSet = db.executeQuery(query);
+        resultSet.next();
+        int count = resultSet.getInt("count");
+        return count > 0;
+    }
+
+    private void registerUser(String email, String password) throws SQLException {
+        // Dodamo uporabnika v bazo podatkov
+        String query = "INSERT INTO uporabniki (el_naslov, geslo) VALUES ('" + email + "', '" + password + "')";
+        db.executeUpdate(query);
     }
 
     private void loginButtonActionPerformed(java.awt.event.ActionEvent evt) {
