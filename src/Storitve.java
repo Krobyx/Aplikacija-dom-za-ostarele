@@ -4,6 +4,11 @@ import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class Storitve {
     private JFrame window;
@@ -11,8 +16,16 @@ public class Storitve {
     private JLabel mainTitle;
     private JTable table;
     private DefaultTableModel model;
+    private PostgreSQL db;
 
     public Storitve() {
+        try {
+            db = new PostgreSQL();
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
+        }
+
         window = new JFrame("Storitve"); // Ustvarimo novo okno
         window.setPreferredSize(new Dimension(1024, 768)); // Nastavimo velikost okna
         window.setBounds(10, 10, 1024, 768); // Nastavimo pozicijo in velikost okna
@@ -38,12 +51,23 @@ public class Storitve {
         model.addColumn("Zaposleni");
         model.addColumn("Stanovalec");
 
-        // Dodamo vzorčne podatke
-        model.addRow(new Object[]{"1", "Čiščenje", "Redno čiščenje sob", "30.00"});
-        model.addRow(new Object[]{"2", "Negovanje", "Pomoč pri osebni negi", "25.00"});
-        model.addRow(new Object[]{"3", "Prevoz", "Prevoz na izlete in nakupe", "20.00"});
-        model.addRow(new Object[]{"4", "Kuharske storitve", "Priprava obrokov", "35.00", "Peter Horvat"});
-        model.addRow(new Object[]{"5", "Pomoč pri sprehodu", "Pomoč pri sprehodu", "15.00", "Janez Novak", "Mojca Kovač"});
+        try {
+            String query = "SELECT s.*, (z.ime || ' ' || z.priimek) AS zaposleni, (st.ime || ' ' || st.priimek) AS stanovalec FROM storitve s LEFT JOIN zaposleni z ON s.zaposleni_id = z.id LEFT JOIN stanovalci st ON s.stanovalec_id = st.id WHERE s.uporabnik_id = " + StateFactory.getInstance().uporabnikId;
+            ResultSet rs = db.executeQuery(query);
+            while (rs.next()) {
+                model.addRow(new Object[] {
+                    rs.getString("id"),
+                    rs.getString("ime"),
+                    rs.getString("opis"),
+                    rs.getString("cena"),
+                    rs.getString("zaposleni"),
+                    rs.getString("stanovalec")
+                });
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Napaka pri pridobivanju podatkov iz podatkovne baze.", "Napaka", JOptionPane.ERROR_MESSAGE);
+        }
 
         // Ustvarimo tabelo in ji nastavimo pisavo ter višino vrstice
         table = new JTable(model);
@@ -70,15 +94,42 @@ public class Storitve {
         JButton addButton = new JButton("Dodaj novo storitev");
         JButton editButton = new JButton("Uredi storitev");
         JButton deleteButton = new JButton("Izbriši storitev");
+        JButton refreshButton = new JButton("Osveži");
+        buttonsPanel.add(refreshButton);
         buttonsPanel.add(addButton);
         buttonsPanel.add(editButton);
         buttonsPanel.add(deleteButton);
+
+        refreshButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                model.setRowCount(0);
+                try {
+                    String query = "SELECT s.*, (z.ime || ' ' || z.priimek) AS zaposleni, (st.ime || ' ' || st.priimek) AS stanovalec FROM storitve s LEFT JOIN zaposleni z ON s.zaposleni_id = z.id LEFT JOIN stanovalci st ON s.stanovalec_id = st.id WHERE s.uporabnik_id = " + StateFactory.getInstance().uporabnikId;
+                    ResultSet rs = db.executeQuery(query);
+                    while (rs.next()) {
+                        model.addRow(new Object[] {
+                            rs.getString("id"),
+                            rs.getString("ime"),
+                            rs.getString("opis"),
+                            rs.getString("cena"),
+                            rs.getString("zaposleni"),
+                            rs.getString("stanovalec")
+                        });
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(null, "Napaka pri pridobivanju podatkov iz podatkovne baze.", "Napaka", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
 
         // Dodamo poslušalce dogodkov za gumb "Dodaj novo storitev"
         addButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                JOptionPane.showMessageDialog(container, "Odpri okno za dodajanje nove storitve.");
+                StoritveObrazec storitveObrazec = new StoritveObrazec(0);
+                storitveObrazec.show();
             }
         });
 
@@ -88,8 +139,9 @@ public class Storitve {
             public void actionPerformed(ActionEvent e) {
                 int selectedRow = table.getSelectedRow();
                 if (selectedRow != -1) {
-                    String serviceID = (String) model.getValueAt(selectedRow, 0);
-                    JOptionPane.showMessageDialog(container, "Odpri okno za urejanje storitve z ID: " + serviceID);
+                    String serviceID = model.getValueAt(selectedRow, 0).toString();
+                    StoritveObrazec storitveObrazec = new StoritveObrazec(Integer.parseInt(serviceID));
+                    storitveObrazec.show();
                 } else {
                     JOptionPane.showMessageDialog(container, "Prosimo, izberite storitev za urejanje.");
                 }
@@ -102,7 +154,15 @@ public class Storitve {
             public void actionPerformed(ActionEvent e) {
                 int selectedRow = table.getSelectedRow();
                 if (selectedRow != -1) {
-                    model.removeRow(selectedRow);
+                    try {
+                        String serviceID = model.getValueAt(selectedRow, 0).toString();
+                        String query = "DELETE FROM storitve WHERE id = " + serviceID + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId;
+                        db.executeUpdate(query);
+                        model.removeRow(selectedRow);
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(container, "Napaka pri brisanju storitve.", "Napaka", JOptionPane.ERROR_MESSAGE);
+                    }
                 } else {
                     JOptionPane.showMessageDialog(container, "Prosimo, izberite storitev za brisanje.");
                 }
