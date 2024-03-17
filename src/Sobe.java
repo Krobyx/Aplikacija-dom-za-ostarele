@@ -134,7 +134,16 @@ public class Sobe {
                 int selectedRow = table.getSelectedRow();
                 if (selectedRow != -1) {
                     // Remove selected row from table
-                    model.removeRow(selectedRow);
+
+                    // Remove selected row from database
+                    try {
+                        String query = "DELETE FROM sobe WHERE id = " + model.getValueAt(selectedRow, 0) + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+                        db.executeUpdate(query);
+                        model.removeRow(selectedRow);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "Napaka pri brisanju sobe iz baze.", "Napaka", JOptionPane.ERROR_MESSAGE);
+                    }
                 } else {
                     JOptionPane.showMessageDialog(container, "Prosimo, izberite sobo za brisanje.");
                 }

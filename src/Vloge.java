@@ -4,6 +4,11 @@ import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class Vloge {
     private JFrame window; // Okno aplikacije
@@ -11,8 +16,16 @@ public class Vloge {
     private JLabel mainTitle; // Glavni naslov obrazca
     private JTable table; // Tabela za prikaz vlog
     private DefaultTableModel model; // Model tabele za shranjevanje podatkov
+    private PostgreSQL db;
 
     public Vloge() {
+        try {
+            db = new PostgreSQL();
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
+        }
+
         // Inicializacija okna
         window = new JFrame("Vloge");
         window.setPreferredSize(new Dimension(1024, 768)); // Nastavitev velikosti okna
@@ -38,10 +51,17 @@ public class Vloge {
         model.addColumn("Naziv"); // Dodajanje stolpca "Naziv"
         model.addColumn("Opis"); // Dodajanje stolpca "Opis"
 
-        // Dodajanje vrstic v tabelo (začasni podatki)
-        model.addRow(new Object[]{"1", "Vloga 1", "Opis vloge 1"});
-        model.addRow(new Object[]{"2", "Vloga 2", "Opis vloge 2"});
-        model.addRow(new Object[]{"3", "Vloga 3", "Opis vloge 3"});
+        // Pridobivanje podatkov iz podatkovne baze
+        try {
+            String query = "SELECT * FROM vloge WHERE uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+            ResultSet resultSet = db.executeQuery(query);
+            while (resultSet.next()) {
+                model.addRow(new Object[]{resultSet.getInt("id"), resultSet.getString("naziv"), resultSet.getString("opis")});
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Napaka pri pridobivanju podatkov iz baze.", "Napaka", JOptionPane.ERROR_MESSAGE);
+        }
 
         // Ustvarjanje tabele s podanim modelom
         table = new JTable(model);
@@ -64,16 +84,36 @@ public class Vloge {
         JButton addButton = new JButton("Dodaj novo vlogo");
         JButton editButton = new JButton("Uredi vlogo");
         JButton deleteButton = new JButton("Izbriši vlogo");
+        JButton refreshButton = new JButton("Osveži");
+        buttonsPanel.add(refreshButton);
         buttonsPanel.add(addButton);
         buttonsPanel.add(editButton);
         buttonsPanel.add(deleteButton);
+
+        refreshButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                model.setRowCount(0);
+                try {
+                    String query = "SELECT * FROM vloge WHERE uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+                    ResultSet resultSet = db.executeQuery(query);
+                    while (resultSet.next()) {
+                        model.addRow(new Object[]{resultSet.getInt("id"), resultSet.getString("naziv"), resultSet.getString("opis")});
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(null, "Napaka pri pridobivanju podatkov iz baze.", "Napaka", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
 
         // Dodajanje poslušalcev dogodkov gumbom
         addButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Ob kliku na gumb "Dodaj novo vlogo" se prikaže sporočilo
-                JOptionPane.showMessageDialog(container, "Odpri okno za dodajanje nove vloge.");
+                VlogeObrazec obrazec = new VlogeObrazec(0);
+                obrazec.show();
             }
         });
 
@@ -83,8 +123,8 @@ public class Vloge {
                 // Ob kliku na gumb "Uredi vlogo" se preveri izbrana vrstica in prikaže ustrezno sporočilo
                 int selectedRow = table.getSelectedRow();
                 if (selectedRow != -1) {
-                    String roleID = (String) model.getValueAt(selectedRow, 0);
-                    JOptionPane.showMessageDialog(container, "Odpri okno za urejanje vloge z ID: " + roleID);
+                    VlogeObrazec obrazec = new VlogeObrazec(Integer.parseInt(model.getValueAt(selectedRow, 0).toString()));
+                    obrazec.show();
                 } else {
                     JOptionPane.showMessageDialog(container, "Prosimo, izberite vlogo za urejanje.");
                 }
@@ -97,7 +137,15 @@ public class Vloge {
                 // Ob kliku na gumb "Izbriši vlogo" se preveri izbrana vrstica in izbriše ustrezno vrstico iz tabele
                 int selectedRow = table.getSelectedRow();
                 if (selectedRow != -1) {
-                    model.removeRow(selectedRow);
+                    try {
+                        String roleID = model.getValueAt(selectedRow, 0).toString();
+                        String query = "DELETE FROM vloge WHERE id = " + roleID + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+                        db.executeUpdate(query);
+                        model.removeRow(selectedRow);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "Napaka pri brisanju vloge.", "Napaka", JOptionPane.ERROR_MESSAGE);
+                    }
                 } else {
                     JOptionPane.showMessageDialog(container, "Prosimo, izberite vlogo za brisanje.");
                 }

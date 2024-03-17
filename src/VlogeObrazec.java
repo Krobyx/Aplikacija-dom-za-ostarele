@@ -1,5 +1,10 @@
 import javax.swing.*;
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class VlogeObrazec {
 
@@ -11,8 +16,11 @@ public class VlogeObrazec {
     private JLabel opisLabel;
     private JTextArea opisArea;
     private JButton shraniButton;
+    private int vlogaId;
 
-    public VlogeObrazec() {
+    public VlogeObrazec(int vlogaId) {
+        this.vlogaId = vlogaId;
+
         window = new JFrame("Vloge Obrazec"); // Ustvarimo novo okno
         window.setPreferredSize(new Dimension(1024, 768)); // Nastavimo velikost okna
         window.setBounds(10, 10, 1024, 768); // Nastavimo pozicijo in velikost okna
@@ -46,9 +54,54 @@ public class VlogeObrazec {
 
         shraniButton = new JButton("Shrani"); // Ustvarimo nov gumb
         shraniButton.setBounds(10, 450, 100, 40); // Nastavimo pozicijo in velikost
+        shraniButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                shraniVlogo();
+            }
+        });
         container.add(shraniButton); // Dodamo gumb v container
 
         window.setVisible(true); // Naredimo okno vidno
+
+        if (vlogaId != 0) {
+            try {
+                PostgreSQL db = new PostgreSQL();
+                String query = "SELECT * FROM vloge WHERE id = " + vlogaId + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+                ResultSet resultSet = db.executeQuery(query);
+                if (resultSet.next()) {
+                    imeField.setText(resultSet.getString("naziv"));
+                    opisArea.setText(resultSet.getString("opis"));
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void shraniVlogo() {
+        String ime = imeField.getText();
+        String opis = opisArea.getText();
+
+        if (ime.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Ime vloge ne sme biti prazno.", "Napaka", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            PostgreSQL db = new PostgreSQL();
+
+            if (vlogaId <= 0) {
+                String query = "INSERT INTO vloge (naziv, opis, uporabnik_id) VALUES ('" + ime + "', '" + opis + "', " + StateFactory.getInstance().uporabnikId + ");";
+                db.executeUpdate(query);
+            } else {
+                String query = "UPDATE vloge SET naziv = '" + ime + "', opis = '" + opis + "' WHERE id = " + vlogaId + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+                db.executeUpdate(query);
+            }
+            db.close();
+            window.dispose();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public void show() {
