@@ -5,6 +5,11 @@ import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class Zaposleni {
     private JFrame window;
@@ -12,8 +17,16 @@ public class Zaposleni {
     private JLabel mainTitle;
     private JTable table;
     private DefaultTableModel model;
+    private PostgreSQL db;
 
     public Zaposleni() {
+        try {
+            db = new PostgreSQL();
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
+        }
+
         window = new JFrame("Zaposleni"); // Ustvarimo novo okno
         window.setPreferredSize(new Dimension(1024, 768)); // Nastavimo velikost okna
         window.setBounds(10, 10, 1024, 768); // Nastavimo pozicijo in velikost okna
@@ -41,10 +54,27 @@ public class Zaposleni {
         model.addColumn("E-pošta"); // Dodamo stolpec
         model.addColumn("Opombe"); // Dodamo stolpec
 
-        // Dodajanje nekaterih vzorčnih podatkov
-        model.addRow(new Object[]{"1", "Janez", "Novak", "01.01.1980", "Negovalec", "Celovška cesta 123, Ljubljana", "01 234 567", "janez.novak@example.com", "Opombe 1"});
-        model.addRow(new Object[]{"2", "Ana", "Kovač", "15.05.1975", "Medicinska sestra", "Prešernova ulica 45, Maribor", "02 345 678", "ana.kovac@example.com", "Opombe 2"});
-        model.addRow(new Object[]{"3", "Peter", "Horvat", "10.10.1985", "Kuhar", "Trubarjeva cesta 56, Celje", "03 456 789", "peter.horvat@example.com", "Opombe 3"});
+        try {
+            String query = "SELECT * FROM zaposleni z, vloge v WHERE z.vloga_id = v.id AND z.uporabnik_id = " + StateFactory.getInstance().uporabnikId;
+            ResultSet rs = db.executeQuery(query); // Izvedemo poizvedbo
+            while (rs.next()) { // Gremo čez vse vrstice
+                // Dodamo vrstico v model
+                model.addRow(new Object[]{
+                        rs.getString("id"),
+                        rs.getString("ime"),
+                        rs.getString("priimek"),
+                        rs.getString("datum_rojstva"),
+                        rs.getString("naziv"),
+                        rs.getString("naslov"),
+                        rs.getString("telefon"),
+                        rs.getString("el_naslov"),
+                        rs.getString("opombe")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Napaka pri pridobivanju podatkov iz baze.", "Napaka", JOptionPane.ERROR_MESSAGE);
+        }
 
         table = new JTable(model); // Ustvarimo novo tabelo
         table.setFont(new Font("Arial", Font.PLAIN, 24)); // Nastavimo pisavo
@@ -72,9 +102,40 @@ public class Zaposleni {
         JButton addButton = new JButton("Dodaj novega zaposlenega");
         JButton editButton = new JButton("Uredi zaposlenega");
         JButton deleteButton = new JButton("Izbriši zaposlenega");
+        JButton refreshButton = new JButton("Osveži");
+        buttonsPanel.add(refreshButton);
         buttonsPanel.add(addButton);
         buttonsPanel.add(editButton);
         buttonsPanel.add(deleteButton);
+
+        refreshButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Osvežimo tabelo
+                model.setRowCount(0); // Odstranimo vse vrstice iz tabele
+                try {
+                    String query = "SELECT * FROM zaposleni z, vloge v WHERE z.vloga_id = v.id AND z.uporabnik_id = " + StateFactory.getInstance().uporabnikId;
+                    ResultSet rs = db.executeQuery(query); // Izvedemo poizvedbo
+                    while (rs.next()) { // Gremo čez vse vrstice
+                        // Dodamo vrstico v model
+                        model.addRow(new Object[]{
+                                rs.getString("id"),
+                                rs.getString("ime"),
+                                rs.getString("priimek"),
+                                rs.getString("datum_rojstva"),
+                                rs.getString("naziv"),
+                                rs.getString("naslov"),
+                                rs.getString("telefon"),
+                                rs.getString("el_naslov"),
+                                rs.getString("opombe")
+                        });
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(null, "Napaka pri pridobivanju podatkov iz baze.", "Napaka", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
 
         // Dodamo poslušalce dogodkov za gumb "Dodaj nov zaposlenega"
         addButton.addActionListener(new ActionListener() {
@@ -82,7 +143,8 @@ public class Zaposleni {
             public void actionPerformed(ActionEvent e) {
                 // Dodajanje novega zaposlenega
                 // Tukaj bi morali odpreti novo okno za dodajanje zaposlenega
-                JOptionPane.showMessageDialog(container, "Odpri okno za dodajanje novega zaposlenega.");
+                ZaposleniObrazec obrazec = new ZaposleniObrazec(0);
+                obrazec.show();
             }
         });
 
@@ -95,8 +157,9 @@ public class Zaposleni {
                 int selectedRow = table.getSelectedRow();
                 if (selectedRow != -1) {
                     // Pridobimo ID zaposlenega iz izbrane vrstice
-                    String employeeID = (String) model.getValueAt(selectedRow, 0);
-                    JOptionPane.showMessageDialog(container, "Odpri okno za urejanje zaposlenega z ID: " + employeeID);
+                    String employeeID = model.getValueAt(selectedRow, 0).toString();
+                    ZaposleniObrazec obrazec = new ZaposleniObrazec(Integer.parseInt(employeeID));
+                    obrazec.show();
                 } else {
                     JOptionPane.showMessageDialog(container, "Prosimo, izberite zaposlenega za urejanje.");
                 }
@@ -112,7 +175,15 @@ public class Zaposleni {
                 int selectedRow = table.getSelectedRow();
                 if (selectedRow != -1) {
                     // Odstranimo izbrano vrstico iz tabele
-                    model.removeRow(selectedRow);
+                    try {
+                        String employeeID = model.getValueAt(selectedRow, 0).toString();
+                        String query = "DELETE FROM zaposleni WHERE id = " + employeeID + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+                        db.executeUpdate(query);
+                        model.removeRow(selectedRow);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "Napaka pri brisanju zaposlenega.", "Napaka", JOptionPane.ERROR_MESSAGE);
+                    }
                 } else {
                     JOptionPane.showMessageDialog(container, "Prosimo, izberite zaposlenega za brisanje.");
                 }
