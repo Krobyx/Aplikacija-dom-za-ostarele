@@ -4,6 +4,11 @@ import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class Stanovalci {
     private JFrame window; // Okno aplikacije
@@ -11,8 +16,16 @@ public class Stanovalci {
     private JLabel mainTitle; // Glavni naslov obrazca
     private JTable table; // Tabela za prikaz stanovalcev
     private DefaultTableModel model; // Model tabele za shranjevanje podatkov
+    private PostgreSQL db;
 
     public Stanovalci() {
+        try {
+            db = new PostgreSQL();
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
+        }
+
         // Inicializacija okna
         window = new JFrame("Stanovalci");
         window.setPreferredSize(new Dimension(1024, 768)); // Nastavitev velikosti okna
@@ -46,10 +59,17 @@ public class Stanovalci {
         model.addColumn("Opombe"); // Dodajanje stolpca "Opombe"
         model.addColumn("Soba"); // Dodajanje stolpca "Soba"
 
-        // Dodajanje vrstic v tabelo (začasni podatki)
-        model.addRow(new Object[]{"1", "Janez", "Novak", "01.01.1990", "M", "01.01.2022", "Naslov 1", "0123456789", "janez.novak@example.com", "Opombe 1", "101"});
-        model.addRow(new Object[]{"2", "Ana", "Kovač", "15.05.1985", "Ž", "01.01.2022", "Naslov 2", "9876543210", "ana.kovac@example.com", "Opombe 2", "202"});
-        model.addRow(new Object[]{"3", "Miha", "Horvat", "20.12.1978", "M", "01.01.2022", "Naslov 3", "1234567890", "miha.horvat@example.com", "Opombe 3", "303"});
+        // Dodajanje vrstic v tabelo
+        try {
+            String query = "SELECT * FROM stanovalci st, sobe s WHERE st.soba_id = s.id AND st.uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+            ResultSet resultSet = db.executeQuery(query);
+            while (resultSet.next()) {
+                model.addRow(new Object[]{resultSet.getInt("id"), resultSet.getString("ime"), resultSet.getString("priimek"), resultSet.getString("datum_rojstva"), resultSet.getString("spol"), resultSet.getString("datum_sprejema"), resultSet.getString("naslov"), resultSet.getString("telefon"), resultSet.getString("el_naslov"), resultSet.getString("opombe"), resultSet.getString("stevilka_sobe")});
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Napaka pri pridobivanju podatkov iz baze.", "Napaka", JOptionPane.ERROR_MESSAGE);
+        }
 
         // Ustvarjanje tabele s podanim modelom
         table = new JTable(model);
@@ -80,9 +100,28 @@ public class Stanovalci {
         JButton addButton = new JButton("Dodaj novega stanovalca");
         JButton editButton = new JButton("Uredi stanovalca");
         JButton deleteButton = new JButton("Izbriši stanovalca");
+        JButton refreshButton = new JButton("Osveži");
+        buttonsPanel.add(refreshButton);
         buttonsPanel.add(addButton);
         buttonsPanel.add(editButton);
         buttonsPanel.add(deleteButton);
+
+        refreshButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                model.setRowCount(0);
+                try {
+                    String query = "SELECT * FROM stanovalci st, sobe s WHERE st.soba_id = s.id AND st.uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+                    ResultSet resultSet = db.executeQuery(query);
+                    while (resultSet.next()) {
+                        model.addRow(new Object[]{resultSet.getInt("id"), resultSet.getString("ime"), resultSet.getString("priimek"), resultSet.getString("datum_rojstva"), resultSet.getString("spol"), resultSet.getString("datum_sprejema"), resultSet.getString("naslov"), resultSet.getString("telefon"), resultSet.getString("el_naslov"), resultSet.getString("opombe"), resultSet.getString("stevilka_sobe")});
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(null, "Napaka pri pridobivanju podatkov iz baze.", "Napaka", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
 
         // Poslušalci dogodkov za gumb "Dodaj nov stanovalca"
         addButton.addActionListener(new ActionListener() {
@@ -90,7 +129,8 @@ public class Stanovalci {
             public void actionPerformed(ActionEvent e) {
                 // Dodajanje novega stanovalca
                 // Tukaj bi morali odpreti novo okno za dodajanje stanovalca
-                JOptionPane.showMessageDialog(container, "Odpri okno za dodajanje novega stanovalca.");
+                StanovalciObrazec obrazec = new StanovalciObrazec(0);
+                obrazec.show();
             }
         });
 
@@ -102,8 +142,9 @@ public class Stanovalci {
                 int selectedRow = table.getSelectedRow();
                 if (selectedRow != -1) {
                     // Pridobitev ID-ja stanovalca iz izbrane vrstice
-                    String residentID = (String) model.getValueAt(selectedRow, 0);
-                    JOptionPane.showMessageDialog(container, "Odpri okno za urejanje stanovalca z ID: " + residentID);
+                    String residentID = model.getValueAt(selectedRow, 0).toString();
+                    StanovalciObrazec obrazec = new StanovalciObrazec(Integer.parseInt(residentID));
+                    obrazec.show();
                 } else {
                     JOptionPane.showMessageDialog(container, "Prosimo, izberite stanovalca za urejanje.");
                 }
@@ -118,7 +159,15 @@ public class Stanovalci {
                 int selectedRow = table.getSelectedRow();
                 if (selectedRow != -1) {
                     // Odstranitev izbrane vrstice iz tabele
-                    model.removeRow(selectedRow);
+                    try {
+                        String residentID = model.getValueAt(selectedRow, 0).toString();
+                        String query = "DELETE FROM stanovalci WHERE id = " + residentID + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+                        db.executeUpdate(query);
+                        model.removeRow(selectedRow);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "Napaka pri brisanju stanovalca.", "Napaka", JOptionPane.ERROR_MESSAGE);
+                    }
                 } else {
                     JOptionPane.showMessageDialog(container, "Prosimo, izberite stanovalca za brisanje.");
                 }
