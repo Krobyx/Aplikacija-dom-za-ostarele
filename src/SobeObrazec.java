@@ -1,5 +1,10 @@
 import javax.swing.*;
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class SobeObrazec {
 
@@ -13,8 +18,11 @@ public class SobeObrazec {
     private JLabel opombeLabel;
     private JTextArea opombeArea;
     private JButton shraniButton;
+    private int sobaId;
 
-    public SobeObrazec() {
+    public SobeObrazec(int sobaId) {
+        this.sobaId = sobaId;
+
         window = new JFrame("SobeObrazec"); // Ustvarimo novo okno
         window.setPreferredSize(new Dimension(1024, 768)); // Nastavimo velikost okna
         window.setBounds(10, 10, 1024, 768); // Nastavimo pozicijo in velikost okna
@@ -58,7 +66,62 @@ public class SobeObrazec {
 
         shraniButton = new JButton("Shrani"); // Ustvarimo nov gumb
         shraniButton.setBounds(10, 500, 100, 40); // Nastavimo pozicijo in velikost
+        shraniButton.addActionListener( new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                shraniSobo();
+            }
+        }); // Dodamo listener na gumb
         container.add(shraniButton); // Dodamo gumb v panel
+
+        if (sobaId > 0) {
+            try {
+                PostgreSQL db = new PostgreSQL();
+                String query = "SELECT * FROM sobe WHERE id = " + sobaId + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+                ResultSet rs = db.executeQuery(query);
+                if (rs.next()) {
+                    sobaStevilkaField.setText(rs.getString("stevilka_sobe"));
+                    tipSobeField.setText(rs.getString("tip_sobe"));
+                    opombeArea.setText(rs.getString("opombe"));
+                }
+                db.close();
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(window, "Napaka pri pridobivanju podatkov sobe: " + ex.getMessage(), "Napaka", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void shraniSobo() {
+        // Pridobimo podatke iz vnosnih polj
+        String stevilkaSobe = sobaStevilkaField.getText();
+        String tipSobe = tipSobeField.getText();
+        String opombe = opombeArea.getText();
+
+        // Preverimo, ali so vsa polja izpolnjena
+        if (stevilkaSobe.isEmpty() || tipSobe.isEmpty()) {
+            JOptionPane.showMessageDialog(window, "Prosimo, izpolnite vsa polja.", "Nepopolni podatki", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Shranimo podatke o sobi v bazo podatkov
+        try {
+            if (sobaId > 0) {
+                PostgreSQL db = new PostgreSQL();
+                String query = "UPDATE sobe SET stevilka_sobe = '" + stevilkaSobe + "', tip_sobe = '" + tipSobe + "', opombe = '" + opombe + "' WHERE id = " + sobaId + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+                db.executeUpdate(query);
+                db.close();
+                JOptionPane.showMessageDialog(window, "Soba uspešno posodobljena.", "Posodobljeno", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                PostgreSQL db = new PostgreSQL();
+                String query = "INSERT INTO sobe (stevilka_sobe, tip_sobe, opombe, uporabnik_id) VALUES ('" + stevilkaSobe + "', '" + tipSobe + "', '" + opombe + "', " + StateFactory.getInstance().uporabnikId + ");";
+                db.executeUpdate(query);
+                db.close();
+                JOptionPane.showMessageDialog(window, "Soba uspešno shranjena.", "Shranjeno", JOptionPane.INFORMATION_MESSAGE);
+            }
+
+            window.dispose();
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(window, "Napaka pri shranjevanju sobe: " + ex.getMessage(), "Napaka", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     public void show() {

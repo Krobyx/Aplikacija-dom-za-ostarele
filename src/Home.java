@@ -11,6 +11,7 @@ public class Home {
     private JLabel mainTitle;
 
     public Home() {
+        System.out.println(StateFactory.getInstance().uporabnikId);
         window = new JFrame("Storitve Obrazec"); // Ustvarimo novo okno
         window.setPreferredSize(new Dimension(1024, 768)); // Nastavimo velikost okna
         window.setBounds(10, 10, 1024, 768); // Nastavimo pozicijo in velikost okna

@@ -19,9 +19,7 @@ public class Registracija {
     private JPasswordField passwordConfirmField;
     private JButton registerButton;
     private JButton loginButton;
-    private JLabel errorLabel;
     private PostgreSQL db;
-
 
     public Registracija() {
         try {

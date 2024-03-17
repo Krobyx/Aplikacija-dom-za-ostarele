@@ -5,6 +5,11 @@ import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class Sobe {
     private JFrame window;
@@ -13,7 +18,16 @@ public class Sobe {
     private JTable table;
     private DefaultTableModel model;
 
+    private PostgreSQL db;
+
     public Sobe() {
+        try {
+            db = new PostgreSQL();
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
+        }
+
         window = new JFrame("Sobe"); // Ustvarimo novo okno
         window.setPreferredSize(new Dimension(1024, 768)); // Nastavimo velikost okna
         window.setBounds(10, 10, 1024, 768); // Nastavimo pozicijo in velikost okna
@@ -36,9 +50,16 @@ public class Sobe {
         model.addColumn("Tip sobe"); // Dodamo stolpec
         model.addColumn("Opombe"); // Dodamo stolpec
 
-        model.addRow(new Object[]{"1", "101", "Enoposteljna", "Opombe 1 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}); // Dodamo vrstico
-        model.addRow(new Object[]{"2", "202", "Dvoposteljna", "Opombe 2"}); // Dodamo vrstico
-        model.addRow(new Object[]{"3", "303", "Apartma", "Opombe 3"}); // Dodamo vrstico
+        try {
+            String query = "SELECT * FROM sobe WHERE uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+            ResultSet resultSet = db.executeQuery(query);
+            while (resultSet.next()) {
+                model.addRow(new Object[]{resultSet.getInt("id"), resultSet.getString("stevilka_sobe"), resultSet.getString("tip_sobe"), resultSet.getString("opombe")});
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Napaka pri pridobivanju podatkov iz baze.", "Napaka", JOptionPane.ERROR_MESSAGE);
+        }
 
         table = new JTable(model); // Ustvarimo novo tabelo
         table.setFont(new Font("Arial", Font.PLAIN, 24)); // Nastavimo pisavo
@@ -58,17 +79,35 @@ public class Sobe {
         JButton addButton = new JButton("Dodaj novo sobo"); // Ustvarimo nov gumb
         JButton editButton = new JButton("Uredi sobo"); // Ustvarimo nov gumb
         JButton deleteButton = new JButton("Izbriši sobo"); // Ustvarimo nov gumb
+        JButton refreshButton = new JButton("Osveži");
+        buttonsPanel.add(refreshButton);
         buttonsPanel.add(addButton); // Dodamo gumb v panel
         buttonsPanel.add(editButton); // Dodamo gumb v panel
         buttonsPanel.add(deleteButton); // Dodamo gumb v panel
+
+        refreshButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                model.setRowCount(0);
+                try {
+                    String query = "SELECT * FROM sobe WHERE uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+                    ResultSet resultSet = db.executeQuery(query);
+                    while (resultSet.next()) {
+                        model.addRow(new Object[]{resultSet.getInt("id"), resultSet.getString("stevilka_sobe"), resultSet.getString("tip_sobe"), resultSet.getString("opombe")});
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(null, "Napaka pri pridobivanju podatkov iz baze.", "Napaka", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
 
         // Add action listeners to buttons
         addButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Add action for adding new room
-                // This will open a new window for adding a new room
-                JOptionPane.showMessageDialog(container, "Odpri okno za dodajanje nove sobe.");
+                SobeObrazec sobObrazec = new SobeObrazec(0); // Ustvarimo novo instanco razreda SobeObrazec
+                sobObrazec.show(); // Pokažemo okno
             }
         });
 
@@ -79,9 +118,8 @@ public class Sobe {
                 // This will open a new window for editing the selected room
                 int selectedRow = table.getSelectedRow();
                 if (selectedRow != -1) {
-                    // Get room ID from selected row
-                    String roomID = (String) model.getValueAt(selectedRow, 0);
-                    JOptionPane.showMessageDialog(container, "Odpri okno za urejanje sobe z ID: " + roomID);
+                    SobeObrazec sobObrazec = new SobeObrazec(Integer.parseInt(model.getValueAt(selectedRow, 0).toString()));
+                    sobObrazec.show();
                 } else {
                     JOptionPane.showMessageDialog(container, "Prosimo, izberite sobo za urejanje.");
                 }

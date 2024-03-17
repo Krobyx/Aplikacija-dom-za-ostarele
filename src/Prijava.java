@@ -1,5 +1,10 @@
 import javax.swing.*;
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class Prijava {
 
@@ -49,6 +54,11 @@ public class Prijava {
 
         loginButton = new JButton("Prijavi se"); // Ustvarimo nov gumb
         loginButton.setBounds(10, 330, 1004, 40); // Nastavimo pozicijo in velikost
+        loginButton.addActionListener( new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                loginButtonActionPerformed();
+            }
+        }); // Dodamo listener na gumb
         container.add(loginButton); // Dodamo gumb v panel
 
         registerButton = new JButton("Pojdi na registracijo"); // Ustvarimo nov gumb
@@ -59,6 +69,27 @@ public class Prijava {
             }
         });  // Nastavimo akcijo ob kliku na gumb
         container.add(registerButton); // Dodamo gumb v panel
+    }
+
+    private void loginButtonActionPerformed() {
+        String email = emailField.getText(); // Preberemo vrednost iz textfielda
+        String password = new String(passwordField.getPassword()); // Preberemo vrednost iz textfielda
+        try {
+            PostgreSQL database = new PostgreSQL(); // Ustvarimo povezavo na bazo
+            ResultSet result = database.executeQuery("SELECT * FROM uporabniki WHERE el_naslov = '" + email + "' AND geslo = '" + password + "';"); // Izvedemo poizvedbo
+            if (result.next()) { // Če je uporabnik najden
+                JOptionPane.showMessageDialog(window, "Uspešno ste se prijavili!"); // Izpišemo sporočilo
+                StateFactory.getInstance().uporabnikId = result.getInt("id"); // Shranimo id uporabnika
+                Home home = new Home(); // Ustvarimo novo okno
+                home.show(); // Pokažemo novo okno
+                window.dispose(); // Zapremo trenutno okno
+            } else { // Če uporabnik ni najden
+                JOptionPane.showMessageDialog(window, "Napačen email ali geslo!"); // Izpišemo sporočilo
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(window, "Napaka pri prijavi!"); // Izpišemo sporočilo
+        }
     }
 
     private void registerButtonActionPerformed(java.awt.event.ActionEvent evt) {
