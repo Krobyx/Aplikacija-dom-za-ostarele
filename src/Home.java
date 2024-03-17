@@ -98,8 +98,10 @@ public class Home {
 
     private void logout() {
         // Implementacija odjave
-        System.out.println("Odjava...");
-        // Dodajte kodo za izhod iz aplikacije ali prijavo
+        StateFactory.getInstance().uporabnikId = 0;
+        window.dispose();
+        Prijava prijava = new Prijava();
+        prijava.show();
     }
 
     public void show() {
