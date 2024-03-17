@@ -7,6 +7,13 @@ public class Launcher {
             public void run() {
                 Home test = new Home();
                 test.show();
+
+                try {
+                    PostgreSQL db = new PostgreSQL();
+                    db.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
