@@ -41,7 +41,7 @@ public class StanovalciObrazec {
         this.stanovalecId = stanovalecId;
 
         try {
-            db = new PostgreSQL();
+            db = PostgreSQL.getInstance();
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
@@ -227,15 +227,14 @@ public class StanovalciObrazec {
 
         try {
             if (stanovalecId <= 0) {
-                String query = "INSERT INTO stanovalci (ime, priimek, datum_rojstva, spol, datum_sprejema, naslov, telefon, el_naslov, opombe, soba_id, uporabnik_id) VALUES ('" + ime + "', '" + priimek + "', '" + datumRojstva + "', '" + spol + "', '" + datumSprejema + "', '" + naslov + "', '" + telefon + "', '" + elNaslov + "', '" + opombe + "', " + sobaId + ", " + StateFactory.getInstance().uporabnikId + ");";
-                db.executeUpdate(query);
+                String query = "SELECT insert_resident('" + ime + "', '" + priimek + "', '" + datumRojstva + "', '" + spol + "', '" + datumSprejema + "', '" + naslov + "', '" + telefon + "', '" + elNaslov + "', '" + opombe + "', " + sobaId + ", " + StateFactory.getInstance().uporabnikId + ");";
+                db.executeQuery(query);
                 JOptionPane.showMessageDialog(null, "Stanovalec uspešno dodan.", "Uspeh", JOptionPane.INFORMATION_MESSAGE);
             } else {
-                String query = "UPDATE stanovalci SET ime = '" + ime + "', priimek = '" + priimek + "', datum_rojstva = '" + datumRojstva + "', spol = '" + spol + "', datum_sprejema = '" + datumSprejema + "', naslov = '" + naslov + "', telefon = '" + telefon + "', el_naslov = '" + elNaslov + "', opombe = '" + opombe + "', soba_id = " + sobaId + " WHERE id = " + stanovalecId + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
-                db.executeUpdate(query);
+                String query = "SELECT update_resident('" + ime + "', '" + priimek + "', '" + datumRojstva + "', '" + spol + "', '" + datumSprejema + "', '" + naslov + "', '" + telefon + "', '" + elNaslov + "', '" + opombe + "', " + sobaId + ", " + stanovalecId + ", " + StateFactory.getInstance().uporabnikId + ");";
+                db.executeQuery(query);
                 JOptionPane.showMessageDialog(null, "Stanovalec uspešno posodobljen.", "Uspeh", JOptionPane.INFORMATION_MESSAGE);
             }
-            db.close();
             window.dispose();
         } catch (SQLException e) {
             e.printStackTrace();

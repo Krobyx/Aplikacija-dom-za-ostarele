@@ -20,7 +20,7 @@ public class Storitve {
 
     public Storitve() {
         try {
-            db = new PostgreSQL();
+            db = PostgreSQL.getInstance();
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
@@ -156,8 +156,8 @@ public class Storitve {
                 if (selectedRow != -1) {
                     try {
                         String serviceID = model.getValueAt(selectedRow, 0).toString();
-                        String query = "DELETE FROM storitve WHERE id = " + serviceID + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId;
-                        db.executeUpdate(query);
+                        String query = "SELECT delete_service(" + serviceID + ", " + StateFactory.getInstance().uporabnikId + ");";
+                        db.executeQuery(query);
                         model.removeRow(selectedRow);
                     } catch (SQLException ex) {
                         ex.printStackTrace();

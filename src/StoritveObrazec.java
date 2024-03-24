@@ -29,7 +29,7 @@ public class StoritveObrazec {
         this.storitevId = storitevId;
 
         try {
-            db = new PostgreSQL();
+            db = PostgreSQL.getInstance();
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
@@ -189,15 +189,14 @@ public class StoritveObrazec {
 
         try {
             if (storitevId > 0) {
-                String query = "UPDATE storitve SET ime = '" + ime + "', opis = '" + opis + "', zaposleni_id = " + zaposleniId + ", stanovalec_id = " + stanovalecId + ", cena = " + cena + " WHERE id = " + storitevId + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId;
-                db.executeUpdate(query);
+                String query = "SELECT update_service('" + ime + "', '" + opis + "', " + cena + ", " + zaposleniId + ", " + stanovalecId + ", " + storitevId + ", " + StateFactory.getInstance().uporabnikId + ")";
+                db.executeQuery(query);
                 JOptionPane.showMessageDialog(null, "Storitev uspešno posodobljena.", "Obvestilo", JOptionPane.INFORMATION_MESSAGE);
             } else {
-                String query = "INSERT INTO storitve (ime, opis, zaposleni_id, stanovalec_id, cena, uporabnik_id) VALUES ('" + ime + "', '" + opis + "', " + zaposleniId + ", " + stanovalecId + ", " + cena + ", " + StateFactory.getInstance().uporabnikId + ")";
-                db.executeUpdate(query);
+                String query = "SELECT insert_service('" + ime + "', '" + opis + "', " + cena + ", " + zaposleniId + ", " + stanovalecId + ", " + StateFactory.getInstance().uporabnikId + ")";
+                db.executeQuery(query);
                 JOptionPane.showMessageDialog(null, "Storitev uspešno dodana.", "Obvestilo", JOptionPane.INFORMATION_MESSAGE);
             }
-            db.close();
             window.dispose();
         } catch (SQLException e) {
             e.printStackTrace();

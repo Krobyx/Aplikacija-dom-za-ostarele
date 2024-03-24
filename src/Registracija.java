@@ -23,7 +23,7 @@ public class Registracija {
 
     public Registracija() {
         try {
-            db = new PostgreSQL();
+            db = PostgreSQL.getInstance(); // Pridobimo instanco razreda za delo z bazo
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
@@ -140,8 +140,8 @@ public class Registracija {
 
     private void registerUser(String email, String password) throws SQLException {
         // Dodamo uporabnika v bazo podatkov
-        String query = "INSERT INTO uporabniki (el_naslov, geslo) VALUES ('" + email + "', '" + password + "')";
-        db.executeUpdate(query);
+        String query = "SELECT insert_user('" + email + "', '" + password + "')";
+        db.executeQuery(query);
     }
 
     private void loginButtonActionPerformed(java.awt.event.ActionEvent evt) {

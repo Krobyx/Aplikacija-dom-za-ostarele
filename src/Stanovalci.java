@@ -20,7 +20,7 @@ public class Stanovalci {
 
     public Stanovalci() {
         try {
-            db = new PostgreSQL();
+            db = PostgreSQL.getInstance();
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
@@ -161,8 +161,8 @@ public class Stanovalci {
                     // Odstranitev izbrane vrstice iz tabele
                     try {
                         String residentID = model.getValueAt(selectedRow, 0).toString();
-                        String query = "DELETE FROM stanovalci WHERE id = " + residentID + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
-                        db.executeUpdate(query);
+                        String query = "SELECT delete_resident(" + residentID + ", " + StateFactory.getInstance().uporabnikId + ");";
+                        db.executeQuery(query);
                         model.removeRow(selectedRow);
                     } catch (Exception ex) {
                         ex.printStackTrace();

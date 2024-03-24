@@ -22,7 +22,7 @@ public class Sobe {
 
     public Sobe() {
         try {
-            db = new PostgreSQL();
+            db = PostgreSQL.getInstance(); // Ustvarimo instanco razreda PostgreSQL
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
@@ -137,8 +137,8 @@ public class Sobe {
 
                     // Remove selected row from database
                     try {
-                        String query = "DELETE FROM sobe WHERE id = " + model.getValueAt(selectedRow, 0) + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
-                        db.executeUpdate(query);
+                        String query = "SELECT delete_room(" + model.getValueAt(selectedRow, 0) + ", " + StateFactory.getInstance().uporabnikId + ");";
+                        db.executeQuery(query);
                         model.removeRow(selectedRow);
                     } catch (Exception ex) {
                         ex.printStackTrace();

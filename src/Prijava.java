@@ -75,7 +75,7 @@ public class Prijava {
         String email = emailField.getText(); // Preberemo vrednost iz textfielda
         String password = new String(passwordField.getPassword()); // Preberemo vrednost iz textfielda
         try {
-            PostgreSQL database = new PostgreSQL(); // Ustvarimo povezavo na bazo
+            PostgreSQL database = PostgreSQL.getInstance(); // Ustvarimo povezavo na bazo
             ResultSet result = database.executeQuery("SELECT * FROM uporabniki WHERE el_naslov = '" + email + "' AND geslo = '" + password + "';"); // Izvedemo poizvedbo
             if (result.next()) { // Če je uporabnik najden
                 JOptionPane.showMessageDialog(window, "Uspešno ste se prijavili!"); // Izpišemo sporočilo

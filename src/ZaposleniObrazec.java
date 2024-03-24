@@ -35,7 +35,7 @@ public class ZaposleniObrazec {
         this.zaposleniId = zaposleniId;
 
         try {
-            db = new PostgreSQL();
+            db = PostgreSQL.getInstance();
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
@@ -183,10 +183,9 @@ public class ZaposleniObrazec {
 
         if (zaposleniId > 0) {
             try {
-                String query = "UPDATE zaposleni SET ime = '" + ime + "', priimek = '" + priimek + "', datum_rojstva = '" + datumRojstva + "', naslov = '" + naslov + "', telefon = '" + telefon + "', el_naslov = '" + elNaslov + "', opombe = '" + opombe + "', vloga_id = " + vlogaId + " WHERE id = " + zaposleniId + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
-                db.executeUpdate(query);
+                String query = "SELECT update_employee('" + ime + "', '" + priimek + "', '" + datumRojstva + "', " + vlogaId + ", '" + naslov + "', '" + telefon + "', '" + elNaslov + "', '" + opombe + "', " + zaposleniId + ", " + StateFactory.getInstance().uporabnikId + ");";
+                db.executeQuery(query);
                 JOptionPane.showMessageDialog(null, "Zaposleni uspešno posodobljen.", "Uspeh", JOptionPane.INFORMATION_MESSAGE);
-                db.close();
                 window.dispose();
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -194,10 +193,9 @@ public class ZaposleniObrazec {
             }
         } else {
             try {
-                String query = "INSERT INTO zaposleni (ime, priimek, datum_rojstva, naslov, telefon, el_naslov, opombe, vloga_id, uporabnik_id) VALUES ('" + ime + "', '" + priimek + "', '" + datumRojstva + "', '" + naslov + "', '" + telefon + "', '" + elNaslov + "', '" + opombe + "', " + vlogaId + ", " + StateFactory.getInstance().uporabnikId + ");";
-                db.executeUpdate(query);
+                String query = "SELECT insert_employee('" + ime + "', '" + priimek + "', '" + datumRojstva + "', " + vlogaId + ", '" + naslov + "', '" + telefon + "', '" + elNaslov + "', '" + opombe + "', " + StateFactory.getInstance().uporabnikId + ");";
+                db.executeQuery(query);
                 JOptionPane.showMessageDialog(null, "Zaposleni uspešno dodan.", "Uspeh", JOptionPane.INFORMATION_MESSAGE);
-                db.close();
                 window.dispose();
             } catch (SQLException e) {
                 e.printStackTrace();

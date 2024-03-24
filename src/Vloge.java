@@ -20,7 +20,7 @@ public class Vloge {
 
     public Vloge() {
         try {
-            db = new PostgreSQL();
+            db = PostgreSQL.getInstance();
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
@@ -139,8 +139,8 @@ public class Vloge {
                 if (selectedRow != -1) {
                     try {
                         String roleID = model.getValueAt(selectedRow, 0).toString();
-                        String query = "DELETE FROM vloge WHERE id = " + roleID + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
-                        db.executeUpdate(query);
+                        String query = "SELECT delete_role(" + roleID + ", " + StateFactory.getInstance().uporabnikId + ");";
+                        db.executeQuery(query);
                         model.removeRow(selectedRow);
                     } catch (Exception ex) {
                         ex.printStackTrace();

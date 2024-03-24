@@ -65,7 +65,7 @@ public class VlogeObrazec {
 
         if (vlogaId != 0) {
             try {
-                PostgreSQL db = new PostgreSQL();
+                PostgreSQL db = PostgreSQL.getInstance();
                 String query = "SELECT * FROM vloge WHERE id = " + vlogaId + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
                 ResultSet resultSet = db.executeQuery(query);
                 if (resultSet.next()) {
@@ -88,16 +88,15 @@ public class VlogeObrazec {
         }
 
         try {
-            PostgreSQL db = new PostgreSQL();
+            PostgreSQL db = PostgreSQL.getInstance();
 
             if (vlogaId <= 0) {
-                String query = "INSERT INTO vloge (naziv, opis, uporabnik_id) VALUES ('" + ime + "', '" + opis + "', " + StateFactory.getInstance().uporabnikId + ");";
-                db.executeUpdate(query);
+                String query = "SELECT insert_role('" + ime + "', '" + opis + "', " + StateFactory.getInstance().uporabnikId + ");";
+                db.executeQuery(query);
             } else {
-                String query = "UPDATE vloge SET naziv = '" + ime + "', opis = '" + opis + "' WHERE id = " + vlogaId + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
-                db.executeUpdate(query);
+                String query = "SELECT update_role('" + ime + "', '" + opis + "', " + vlogaId + ", " + StateFactory.getInstance().uporabnikId + ");";
+                db.executeQuery(query);
             }
-            db.close();
             window.dispose();
         } catch (SQLException e) {
             e.printStackTrace();

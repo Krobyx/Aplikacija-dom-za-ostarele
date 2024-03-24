@@ -6,13 +6,24 @@ import java.sql.Statement;
 
 public class PostgreSQL {
 
-    private Connection connection;
-    private String url = "jdbc:postgresql://balarama.db.elephantsql.com/qtojddgr";
-    private String username = "qtojddgr";
-    private String password = "yWDsDW9lZmTbbYzVNIv-EGX6tgks7BEb";
+    private static PostgreSQL instance = null;
 
-    public PostgreSQL() throws SQLException {
+    private Connection connection;
+    private String url = "jdbc:postgresql://tyke.db.elephantsql.com/upbczlcq";
+    private String username = "upbczlcq";
+    private String password = "n-tlB225Uwx-n_7FKVD96ZWn3-iY22MU";
+
+    // Private constructor to prevent instantiation from outside
+    private PostgreSQL() throws SQLException {
         this.connection = DriverManager.getConnection(url, username, password);
+    }
+
+    // Method to get the singleton instance
+    public static synchronized PostgreSQL getInstance() throws SQLException {
+        if (instance == null) {
+            instance = new PostgreSQL();
+        }
+        return instance;
     }
 
     public ResultSet executeQuery(String query) throws SQLException {

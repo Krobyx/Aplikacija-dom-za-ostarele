@@ -75,7 +75,7 @@ public class SobeObrazec {
 
         if (sobaId > 0) {
             try {
-                PostgreSQL db = new PostgreSQL();
+                PostgreSQL db = PostgreSQL.getInstance();
                 String query = "SELECT * FROM sobe WHERE id = " + sobaId + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
                 ResultSet rs = db.executeQuery(query);
                 if (rs.next()) {
@@ -83,7 +83,6 @@ public class SobeObrazec {
                     tipSobeField.setText(rs.getString("tip_sobe"));
                     opombeArea.setText(rs.getString("opombe"));
                 }
-                db.close();
             } catch (SQLException ex) {
                 JOptionPane.showMessageDialog(window, "Napaka pri pridobivanju podatkov sobe: " + ex.getMessage(), "Napaka", JOptionPane.ERROR_MESSAGE);
             }
@@ -105,16 +104,14 @@ public class SobeObrazec {
         // Shranimo podatke o sobi v bazo podatkov
         try {
             if (sobaId > 0) {
-                PostgreSQL db = new PostgreSQL();
-                String query = "UPDATE sobe SET stevilka_sobe = '" + stevilkaSobe + "', tip_sobe = '" + tipSobe + "', opombe = '" + opombe + "' WHERE id = " + sobaId + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
-                db.executeUpdate(query);
-                db.close();
+                PostgreSQL db = PostgreSQL.getInstance();
+                String query = "SELECT update_room('" + stevilkaSobe + "', '" + tipSobe + "', '" + opombe + "', " + sobaId + ", " + StateFactory.getInstance().uporabnikId + ");";
+                db.executeQuery(query);
                 JOptionPane.showMessageDialog(window, "Soba uspešno posodobljena.", "Posodobljeno", JOptionPane.INFORMATION_MESSAGE);
             } else {
-                PostgreSQL db = new PostgreSQL();
-                String query = "INSERT INTO sobe (stevilka_sobe, tip_sobe, opombe, uporabnik_id) VALUES ('" + stevilkaSobe + "', '" + tipSobe + "', '" + opombe + "', " + StateFactory.getInstance().uporabnikId + ");";
-                db.executeUpdate(query);
-                db.close();
+                PostgreSQL db = PostgreSQL.getInstance();
+                String query = "SELECT insert_room('" + stevilkaSobe + "', '" + tipSobe + "', '" + opombe + "', " + StateFactory.getInstance().uporabnikId + ");";
+                db.executeQuery(query);
                 JOptionPane.showMessageDialog(window, "Soba uspešno shranjena.", "Shranjeno", JOptionPane.INFORMATION_MESSAGE);
             }
 

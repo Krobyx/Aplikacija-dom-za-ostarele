@@ -21,7 +21,7 @@ public class Zaposleni {
 
     public Zaposleni() {
         try {
-            db = new PostgreSQL();
+            db = PostgreSQL.getInstance(); // Pridobimo instanco razreda PostgreSQL
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Napaka pri povezavi s podatkovno bazo.", "Napaka", JOptionPane.ERROR_MESSAGE);
@@ -177,7 +177,7 @@ public class Zaposleni {
                     // Odstranimo izbrano vrstico iz tabele
                     try {
                         String employeeID = model.getValueAt(selectedRow, 0).toString();
-                        String query = "DELETE FROM zaposleni WHERE id = " + employeeID + " AND uporabnik_id = " + StateFactory.getInstance().uporabnikId + ";";
+                        String query = "SELECT delete_employee(" + employeeID + ", " + StateFactory.getInstance().uporabnikId + ")";
                         db.executeUpdate(query);
                         model.removeRow(selectedRow);
                     } catch (Exception ex) {
